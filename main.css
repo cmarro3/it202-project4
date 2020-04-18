@@ -1,0 +1,13 @@
+:root {--mdc-theme-primary:#51D202 ;}
+
+    
+body {margin: 0;}
+    
+main {margin-left: 8px;}
+    
+view{display: none;}
+    
+mdc-drawer mdc-drawer--modal{display: none;}
+
+span{color: #FFE400}
+

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>COVID-19 Data</title>
+	<link href="https://unpkg.com/material-components-web@v4.0.0/dist/material-components-web.min.css" rel="stylesheet">
+	<script src="https://unpkg.com/material-components-web@v4.0.0/dist/material-components-web.min.js">
+	</script>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+	<link rel="stylesheet" href="main.css">
+</head>
+
+<body class="mdc-typography--body1">
+	<header class="mdc-top-app-bar">
+		<div class="mdc-top-app-bar__row">
+			<section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
+				
+      <span class="mdc-top-app-bar__title">COVID-19 Data</span>
+    </section>
+    <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
+      <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button" data-screen="home">home</button>
+      <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="Download" data-screen="search">search</button>
+      <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button" data-screen="table" aria-label="Print this page">border_all</button>
+      <button class="material-icons mdc-top-app-bar__action-item mdc-icon-button" data-screen="chart" aria-label="Bookmark this page">bar_chart</button>
+    </section>
+  </div>
+</header>
+<main class="mdc-top-app-bar--fixed-adjust">
+<div class="screen" id="home">
+  <h2 class="mdc-typography--headline2">Home/COVID-19 Map</h2>
+ <p>Google Map of countries infected <a href="https://news.google.com/covid19/map?hl=en-US&gl=US&ceid=US:en">https://news.google.com/covid19/map?hl=en-US&gl=US&ceid=US:en</a></div>
+<div class="screen" id="search">
+<h2 class="mdc-typography--headline2">Search for multiple countries </h2>
+<p>Find countries to chart by typing in the box below.</p>
+<input id="country" list="countries" class="mdc-text-field__input">
+
+<datalist id="countries">
+
+</datalist> 
+<br>
+<button id="addCountry" class="mdc-button mdc-button--raised">
+  <div class="mdc-button__ripple"></div>
+  <span class="mdc-button__label">Add country</span>
+</button>
+<div id="selectedCountries"></div>
+<button id="chartCountries" class="mdc-button mdc-button--raised">
+  <div class="mdc-button__ripple"></div>
+  <span class="mdc-button__label">Chart current countries list</span>
+</button>
+  </div>  
+<div class="screen" id="table">
+  <h2 class="mdc-typography--headline2">Tables</h2>
+<div class="mdc-data-table">
+  <table class="mdc-data-table__table" aria-label="Covid cases by date">
+    <thead>
+    </thead>
+     <tbody class="mdc-data-table__content">
+     </tbody></table></div> 
+</div>
+<div class="screen" id="chart">
+    <h2 class="mdc-typography--headline2">Charts</h2>
+  <div id="covidChart"></div>
+    </div>
+</main>
+
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+    <script>
+      google.charts.load('current', {'packages':['corechart']});
+      
+      
+      const countriesToChart = [];
+      
+      
+      const covidEndpoint = "https://pomber.github.io/covid19/timeseries.json";
+
+      let covidData;
+
+      const hideAllScreens = () => {
+        document.querySelectorAll(".screen")
+          .forEach( item => {
+            item.style.display = "none";
+          });
+      }
+
+      const showScreen = (id) => {
+        hideAllScreens(); 
+        document.querySelector(`#${id}`).style.display = "block"
+      }
+
+      const addToCountriesList = (name) => {
+        countriesToChart.push(name);
+        document.querySelector("#selectedCountries")
+          .textContent = countriesToChart.toString();
+      }
+
+
+      const clearMCWDataTable = () => {
+        
+      
+        let tableBody = document.querySelector("table tbody");
+        
+        let child = tableBody.lastElementChild;  
+        while (child) { 
+            tableBody.removeChild(child); 
+            child = tableBody.lastElementChild; 
+        }
+
+      
+        let tableHead = document.querySelector("table thead");
+        
+        child = tableHead.lastElementChild;  
+        while (child) { 
+            tableHead.removeChild(child); 
+            child = tableHead.lastElementChild; 
+        }
+
+
+
+      }
+
+      const createMCWDataTable = () => {
+        let columnHeader = document.createElement("th");
+        columnHeader.classList.add("mdc-data-table__header-cell", "mdc-data-table__header-cell--numeric");
+        columnHeader.setAttribute("role","columnheader");
+        columnHeader.setAttribute("scope","col");
+        
+        
+        let headerRow = document.createElement("tr");
+        headerRow.classList.add("mdc-data-table__header-row");
+
+      
+        let dateHeader = columnHeader.cloneNode(true);
+        dateHeader.classList.remove("mdc-data-table__header-cell--numeric");
+        dateHeader.textContent = "date"
+
+        headerRow.appendChild(dateHeader);
+
+
+        document.querySelector("table thead")
+            .appendChild(headerRow);
+
+        
+        let rowData = [];
+
+        let dates = covidData[countriesToChart[0]].map(item => {return item["date"]})
+
+        rowData.push(dates);
+
+        
+        for (let c of countriesToChart) {
+          let countryHeader = columnHeader.cloneNode(true);
+          countryHeader.textContent = c;
+          document.querySelector("table thead tr")
+            .appendChild(countryHeader);
+
+
+         
+          let countryData =  covidData[c].map(item => {return item["confirmed"]})
+
+          rowData.push(countryData);
+        }
+
+      
+        for (let i=0; i< rowData[0].length; i++) {
+          let tr =  document.createElement("tr");
+          tr.classList.add("mdc-data-table__row");
+
+          for (let j=0; j < rowData.length; j++) {
+           let td = document.createElement("td")
+           td.classList.add("mdc-data-table__cell")
+           if (j > 0) {
+             // if it's not the date column, 
+             //   format as number
+             td.classList.add("mdc-data-table__cell--numeric")
+           } 
+           td.textContent = rowData[j][i];
+           tr.appendChild(td);
+          }
+          document.querySelector("table tbody")
+            .appendChild(tr);
+        }
+      }
+
+      const loadData = (json) => {
+        covidData = json;
+
+        for (k in covidData) {
+          let opt = document.createElement("OPTION");
+          opt.value = k;
+          document.querySelector("#countries").appendChild(opt);
+        }
+
+      }
+
+
+      drawChart = () => {
+        let chartData = [];
+
+        let header = ["date"];
+        for (let c of countriesToChart) {
+          header.push(c);
+        }
+
+        chartData.push(header);
+
+        for (let i = 0; i < covidData[countriesToChart[0]].length; i++) {
+          // for each row create an array
+          let rowData = [];
+          rowData.push(covidData[countriesToChart[0]][i]["date"]);
+          
+          for (let c of countriesToChart) {
+            rowData.push(covidData[c][i]["confirmed"]);
+          }
+          chartData.push(rowData); 
+        }
+        
+
+        var data = google.visualization.arrayToDataTable(chartData);
+
+        var options = {
+          title: 'Covid-19 Cases',
+          curveType: 'function',
+          width: window.innerWidth * .9,
+          height: window.innerHeight * .7,
+          legend: { position: 'bottom' }
+        };
+
+        var chart = new google.visualization.LineChart(document.querySelector('#covidChart'));
+
+        chart.draw(data, options);
+      }
+
+      document.querySelector("#addCountry")
+        .addEventListener("click",(e) => {
+          let countryName = document.querySelector("#country").value;
+          addToCountriesList(countryName);
+        });
+
+      document.querySelector("#chartCountries")
+        .addEventListener("click", (e) => {
+          clearMCWDataTable();
+          createMCWDataTable();
+          showScreen("table");
+          drawChart();
+        });
+
+
+
+      document.querySelectorAll(".mdc-top-app-bar__action-item")
+        .forEach( (element) => {
+          element.addEventListener("click", (e) => {
+            let screenID = e.target.getAttribute("data-screen");
+            showScreen(screenID);
+          })
+        })  
+
+      window.addEventListener("load",() => {
+        fetch(covidEndpoint)
+          .then (response => response.json())
+          .then (json => {
+            loadData(json);
+          })
+
+      });
+
+
+      showScreen("home");
+    </script>
+  </body>
+</html>
