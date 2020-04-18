@@ -9,5 +9,9 @@ view{display: none;}
     
 mdc-drawer mdc-drawer--modal{display: none;}
 
-span{color: #FFE400}
+span{color: #002BFF}
+
+h2{color: #002BFF;}
+
+p,p2{color: red;}
 
